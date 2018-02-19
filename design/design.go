@@ -61,6 +61,7 @@ var RatingMedia = MediaType("application/cassandra.wannabe.rating+json", func() 
 var _ = Resource("rating", func() {
 	Description("A movie rating by a user")
 
+	// Actions are the endpoints
 	Action("upsert", func() {
 		Description("Adds a rating record")
 		Routing(PUT("/"))
@@ -90,7 +91,6 @@ var _ = Resource("rating", func() {
 })
 
 var _ = Resource("health", func() {
-	// Actions are the endpoints
 	Action("health", func() {
 		Description("Status of the API.")
 		Routing(
