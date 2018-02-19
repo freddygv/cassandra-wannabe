@@ -5,6 +5,8 @@
 *.dll
 *.so
 *.dylib
+api-gateway
+db-cli
 
 # Test binary, build with `go test -c`
 *.test
@@ -17,3 +19,6 @@
 
 # Testing dataset
 data/
+
+# Dependencies
+vendor/
