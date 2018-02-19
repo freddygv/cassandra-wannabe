@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package crud;
+
+option go_package = "github.com/freddygv/cassandra-wannabe/pb/crud";
+
+service CRUDService {
+	rpc Upsert(Record) returns (UpsertResponse) {}
+	rpc Read(Key) returns (Record) {}
+	rpc Delete(Key) returns (DeleteResponse) {}
+}
+
+message Key {
+	int32 movieId = 1;
+	int32 userId = 2;
+}
+
+message Record {
+	int32 movieId = 1;
+	int32 userId = 2;
+	float rating = 3;
+}
+
+message UpsertResponse {
+}
+
+message DeleteResponse {
+}
