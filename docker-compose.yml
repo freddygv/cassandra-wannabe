@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  metrics:
+    build: ./metrics
+    networks:
+      - mybridge
+    ports:
+      - "9090:9090"
+
+  traces:
+    build: ./traces
+    networks:
+      - mybridge
+    ports:
+      - "9411:9411"
+
+networks:
+  mybridge:
