@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/freddygv/cassandra-wannabe/app"
-	"github.com/freddygv/cassandra-wannabe/pb/crud"
 	pb "github.com/freddygv/cassandra-wannabe/pb/crud"
 	"github.com/goadesign/goa"
 	"google.golang.org/grpc"
@@ -27,7 +26,7 @@ func getAddress() string {
 }
 
 // TODO: Retry policy instead of straight to 5xx resp
-func dialCRUD(address string) (*grpc.ClientConn, crud.CRUDServiceClient, error) {
+func dialCRUD(address string) (*grpc.ClientConn, pb.CRUDServiceClient, error) {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return nil, nil, err
