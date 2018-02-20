@@ -98,7 +98,7 @@ func (s *crudServer) Delete(ctx context.Context, in *pb.Key) (*pb.DeleteResponse
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		k := partition(in.UserID, in.MovieID)
-		err := b.Delete(k)
+		err := b.Delete([]byte(k))
 		return err
 	})
 	if err != nil {
@@ -109,12 +109,12 @@ func (s *crudServer) Delete(ctx context.Context, in *pb.Key) (*pb.DeleteResponse
 }
 
 // Combine and hash UserID and MovieID
-func partition(UserID, MovieID int32) []byte {
+func partition(UserID, MovieID int32) string {
 	u := formatInt32(UserID)
 	m := formatInt32(MovieID)
 	checksum := murmur3.Sum64([]byte(u + ":" + m))
 
-	return []byte(strconv.FormatUint(checksum, 16))
+	return strconv.FormatUint(checksum, 16)
 }
 
 func formatInt32(num int32) string {
