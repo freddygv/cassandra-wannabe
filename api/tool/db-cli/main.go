@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/freddygv/cassandra-wannabe/client"
-	"github.com/freddygv/cassandra-wannabe/tool/cli"
-	goaclient "github.com/goadesign/goa/client"
-	"github.com/spf13/cobra"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/freddygv/cassandra-wannabe/api/client"
+	"github.com/freddygv/cassandra-wannabe/api/tool/cli"
+	goaclient "github.com/goadesign/goa/client"
+	"github.com/spf13/cobra"
 )
 
 func main() {
