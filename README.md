@@ -7,7 +7,8 @@ Cassandra Wannabe
 Distributed data store **experiment** for MovieLens ratings dataset. Schema is hard-coded to focus on other areas.
 
 ### Core Goals
-- [ ] Consistent hashing with at most 1-hop routing
+- [ ] Consistent hashing 
+- [ ] At most 1-hop routing
 - [ ] Data replication on 2 nodes with Cassandra's SimpleStrategy
 - [x] Expose REST api for upsert/read/delete
 - [x] gRPC CRUD service for the nodes
