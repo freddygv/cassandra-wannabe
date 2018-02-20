@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 
-	"github.com/freddygv/cassandra-wannabe/pb/crud"
-
 	"github.com/freddygv/cassandra-wannabe/app"
+	"github.com/freddygv/cassandra-wannabe/pb/crud"
 	pb "github.com/freddygv/cassandra-wannabe/pb/crud"
 	"github.com/goadesign/goa"
 	"google.golang.org/grpc"
@@ -16,13 +15,15 @@ type RatingController struct {
 	*goa.Controller
 }
 
-const (
-	address = "localhost:8080"
-)
-
-// TODO: Move to ring buffer
 func getAddress() string {
-	return address
+	addressRing.Next()
+
+	if str, ok := addressRing.Value.(string); ok {
+		return str
+	}
+
+	// TODO: Retry policy looping over all entries in the ring, then panic
+	panic("No valid address to connect to")
 }
 
 // TODO: Retry policy instead of straight to 5xx resp
@@ -42,7 +43,7 @@ func NewRatingController(service *goa.Service) *RatingController {
 
 // Delete runs the delete action.
 func (c *RatingController) Delete(ctx *app.DeleteRatingContext) error {
-	conn, client, err := dialCRUD(address)
+	conn, client, err := dialCRUD(getAddress())
 	if err != nil {
 		return ctx.InternalServerError()
 	}

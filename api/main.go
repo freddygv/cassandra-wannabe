@@ -3,12 +3,25 @@
 package main
 
 import (
+	"container/ring"
+
 	"github.com/freddygv/cassandra-wannabe/app"
 	"github.com/goadesign/goa"
 	"github.com/goadesign/goa/middleware"
 )
 
+const ()
+
+var addresses = []string{"localhost:8080"}
+var addressRing *ring.Ring
+
 func main() {
+	addressRing = ring.New(len(addresses))
+	// Initialize circular buffer
+	for _, v := range addresses {
+		addressRing.Value = v
+	}
+
 	// Create service
 	service := goa.New("db")
 
