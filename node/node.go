@@ -72,6 +72,7 @@ func (s *crudServer) Read(ctx context.Context, in *pb.Key) (*pb.Record, error) {
 		b := tx.Bucket([]byte(bucket))
 		k := partition(in.UserID, in.MovieID)
 		v := b.Get([]byte(k))
+
 		if v == nil {
 			return status.Error(codes.NotFound, "key not found")
 		}

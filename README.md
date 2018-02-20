@@ -10,7 +10,7 @@ Distributed data store **experiment** for MovieLens ratings dataset. Schema is h
 - [ ] Consistent hashing with at most 1-hop routing
 - [ ] Data replication on 2 nodes with Cassandra's SimpleStrategy
 - [x] Expose REST api for upsert/read/delete
-- [ ] gRPC CRUD service for the nodes
+- [x] gRPC CRUD service for the nodes
 - [ ] Observability instrumentation with OpenCensus.io
 - [ ] Metrics exported to Prometheus
 - [ ] Traces exported to Zipkin
