@@ -7,14 +7,14 @@ Cassandra Wannabe
 Distributed data store **experiment** for MovieLens ratings dataset. Schema is hard-coded to focus on other areas.
 
 ### Core Goals
-* Consistent hashing with at most 1-hop routing
-* Data replication on 2 nodes with Cassandra's SimpleStrategy
-* Expose REST api for upsert/read/delete ✅
-* gRPC CRUD service for the nodes
-* Observability instrumentation with OpenCensus.io
-* Metrics exported to Prometheus
-* Traces exported to Zipkin
+- [ ] Consistent hashing with at most 1-hop routing
+- [ ] Data replication on 2 nodes with Cassandra's SimpleStrategy
+- [x] Expose REST api for upsert/read/delete
+- [ ] gRPC CRUD service for the nodes
+- [ ] Observability instrumentation with OpenCensus.io
+- [ ] Metrics exported to Prometheus
+- [ ] Traces exported to Zipkin
 
 ### Stretch Goals
-* Virtual nodes instead of real nodes
-* Basic implementation of Gossip protocol with UDP packets
+- [ ] Virtual nodes instead of real nodes
+- [ ] Basic implementation of Gossip protocol with UDP packets
