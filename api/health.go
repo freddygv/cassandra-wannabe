@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/freddygv/cassandra-wannabe/app"
+	"github.com/freddygv/cassandra-wannabe/api/app"
 	"github.com/goadesign/goa"
 )
 

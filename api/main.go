@@ -5,14 +5,14 @@ package main
 import (
 	"container/ring"
 
-	"github.com/freddygv/cassandra-wannabe/app"
+	"github.com/freddygv/cassandra-wannabe/api/app"
 	"github.com/goadesign/goa"
 	"github.com/goadesign/goa/middleware"
 )
 
 const ()
 
-var addresses = []string{"localhost:8080"}
+var addresses = []string{"localhost:8081"}
 var addressRing *ring.Ring
 
 func main() {

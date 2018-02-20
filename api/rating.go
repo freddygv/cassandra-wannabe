@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/freddygv/cassandra-wannabe/app"
+	"github.com/freddygv/cassandra-wannabe/api/app"
 	pb "github.com/freddygv/cassandra-wannabe/pb/crud"
 	"github.com/goadesign/goa"
 	"google.golang.org/grpc"
