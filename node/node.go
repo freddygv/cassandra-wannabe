@@ -28,6 +28,11 @@ type crudServer struct {
 	db *bolt.DB
 }
 
+type Row struct {
+	Payload *pb.Record
+	Created time.Time
+}
+
 func main() {
 	// Start with empty DB
 	if err := os.RemoveAll(file); err != nil {
@@ -61,24 +66,27 @@ func main() {
 }
 
 func (s *crudServer) Read(ctx context.Context, in *pb.Key) (*pb.Record, error) {
-	var record pb.Record
+	var r Row
 
 	err := s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		k := partition(in.UserID, in.MovieID)
 		v := b.Get([]byte(k))
-		err := json.Unmarshal(v, &record)
+		if v == nil {
+			return status.Error(codes.NotFound, "key not found")
+		}
+		err := json.Unmarshal(v, &r)
 		return err
 	})
 
-	return &record, err
+	return r.Payload, err
 }
 
 func (s *crudServer) Upsert(ctx context.Context, in *pb.Record) (*pb.UpsertResponse, error) {
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 
-		buf, err := json.Marshal(in)
+		buf, err := json.Marshal(Row{Payload: in, Created: time.Now()})
 		if err != nil {
 			return err
 		}
