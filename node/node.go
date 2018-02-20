@@ -13,6 +13,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	pb "github.com/freddygv/cassandra-wannabe/pb/crud"
+	"github.com/spaolacci/murmur3"
 	"google.golang.org/grpc"
 )
 
@@ -59,13 +60,10 @@ func (s *crudServer) Read(ctx context.Context, in *pb.Key) (*pb.Record, error) {
 
 	err := s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-
-		key := strconv.Itoa(int(in.UserID)) // TODO: Replace with murmur3
-
-		v := b.Get([]byte(key))
+		k := partition(in.UserID, in.MovieID)
+		v := b.Get([]byte(k))
 		err := json.Unmarshal(v, &record)
 		return err
-
 	})
 
 	return &record, err
@@ -75,14 +73,13 @@ func (s *crudServer) Upsert(ctx context.Context, in *pb.Record) (*pb.UpsertRespo
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 
-		key := strconv.Itoa(int(in.UserID)) // TODO: Replace with murmur3
-
 		buf, err := json.Marshal(in)
 		if err != nil {
 			return err
 		}
 
-		err = b.Put([]byte(key), buf)
+		k := partition(in.UserID, in.MovieID)
+		err = b.Put([]byte(k), buf)
 		return err
 	})
 	if err != nil {
@@ -95,10 +92,8 @@ func (s *crudServer) Upsert(ctx context.Context, in *pb.Record) (*pb.UpsertRespo
 func (s *crudServer) Delete(ctx context.Context, in *pb.Key) (*pb.DeleteResponse, error) {
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-
-		key := strconv.Itoa(int(in.UserID)) // TODO: Replace with murmur3
-
-		err := b.Delete([]byte(key))
+		k := partition(in.UserID, in.MovieID)
+		err := b.Delete(k)
 		return err
 	})
 	if err != nil {
@@ -106,4 +101,18 @@ func (s *crudServer) Delete(ctx context.Context, in *pb.Key) (*pb.DeleteResponse
 	}
 
 	return &pb.DeleteResponse{}, nil
+}
+
+// Combine UserID and MovieID, then hash them
+func partition(UserID, MovieID int32) []byte {
+	u := formatInt32(UserID)
+	m := formatInt32(MovieID)
+	checksum := murmur3.Sum64([]byte(u + ":" + m))
+
+	return []byte(strconv.FormatUint(checksum, 16))
+}
+
+// int32 to string
+func formatInt32(num int32) string {
+	return strconv.FormatInt(int64(num), 10)
 }
