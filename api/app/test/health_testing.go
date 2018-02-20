@@ -4,8 +4,8 @@
 //
 // Command:
 // $ goagen
-// --design=github.com/freddygv/cassandra-wannabe/design
-// --out=$(GOPATH)/src/github.com/freddygv/cassandra-wannabe
+// --design=github.com/freddygv/cassandra-wannabe/api/design
+// --out=$(GOPATH)/src/github.com/freddygv/cassandra-wannabe/api
 // --version=v1.3.1
 
 package test
@@ -14,7 +14,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/freddygv/cassandra-wannabe/app"
+	"github.com/freddygv/cassandra-wannabe/api/app"
 	"github.com/goadesign/goa"
 	"github.com/goadesign/goa/goatest"
 	"io"

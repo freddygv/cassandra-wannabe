@@ -4,8 +4,8 @@
 //
 // Command:
 // $ goagen
-// --design=github.com/freddygv/cassandra-wannabe/design
-// --out=$(GOPATH)/src/github.com/freddygv/cassandra-wannabe
+// --design=github.com/freddygv/cassandra-wannabe/api/design
+// --out=$(GOPATH)/src/github.com/freddygv/cassandra-wannabe/api
 // --version=v1.3.1
 
 package app
@@ -91,6 +91,18 @@ func (ctx *DeleteRatingContext) Accepted() error {
 	return nil
 }
 
+// NotFound sends a HTTP response with status code 404.
+func (ctx *DeleteRatingContext) NotFound() error {
+	ctx.ResponseData.WriteHeader(404)
+	return nil
+}
+
+// InternalServerError sends a HTTP response with status code 500.
+func (ctx *DeleteRatingContext) InternalServerError() error {
+	ctx.ResponseData.WriteHeader(500)
+	return nil
+}
+
 // ReadRatingContext provides the rating read action context.
 type ReadRatingContext struct {
 	context.Context
@@ -138,6 +150,18 @@ func (ctx *ReadRatingContext) OK(r *Rating) error {
 	return ctx.ResponseData.Service.Send(ctx.Context, 200, r)
 }
 
+// NotFound sends a HTTP response with status code 404.
+func (ctx *ReadRatingContext) NotFound() error {
+	ctx.ResponseData.WriteHeader(404)
+	return nil
+}
+
+// InternalServerError sends a HTTP response with status code 500.
+func (ctx *ReadRatingContext) InternalServerError() error {
+	ctx.ResponseData.WriteHeader(500)
+	return nil
+}
+
 // UpsertRatingContext provides the rating upsert action context.
 type UpsertRatingContext struct {
 	context.Context
@@ -161,5 +185,11 @@ func NewUpsertRatingContext(ctx context.Context, r *http.Request, service *goa.S
 // NoContent sends a HTTP response with status code 204.
 func (ctx *UpsertRatingContext) NoContent() error {
 	ctx.ResponseData.WriteHeader(204)
+	return nil
+}
+
+// InternalServerError sends a HTTP response with status code 500.
+func (ctx *UpsertRatingContext) InternalServerError() error {
+	ctx.ResponseData.WriteHeader(500)
 	return nil
 }
