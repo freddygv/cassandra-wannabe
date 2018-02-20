@@ -11,13 +11,13 @@ service CRUDService {
 }
 
 message Key {
-	int32 movieId = 1;
-	int32 userId = 2;
+	int32 movieID = 1;
+	int32 userID = 2;
 }
 
 message Record {
-	int32 movieId = 1;
-	int32 userId = 2;
+	int32 movieID = 1;
+	int32 userID = 2;
 	float rating = 3;
 }
 
