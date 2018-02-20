@@ -100,8 +100,6 @@ paths:
       responses:
         "202":
           description: Accepted
-        "404":
-          description: Not Found
         "500":
           description: Internal Server Error
       schemes:

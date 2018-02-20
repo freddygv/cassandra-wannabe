@@ -90,7 +90,6 @@ var _ = Resource("rating", func() {
 			Param("userId", Integer)
 		})
 		Response(Accepted)
-		Response(NotFound)
 		Response(InternalServerError)
 	})
 })

@@ -91,12 +91,6 @@ func (ctx *DeleteRatingContext) Accepted() error {
 	return nil
 }
 
-// NotFound sends a HTTP response with status code 404.
-func (ctx *DeleteRatingContext) NotFound() error {
-	ctx.ResponseData.WriteHeader(404)
-	return nil
-}
-
 // InternalServerError sends a HTTP response with status code 500.
 func (ctx *DeleteRatingContext) InternalServerError() error {
 	ctx.ResponseData.WriteHeader(500)
