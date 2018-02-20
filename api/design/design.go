@@ -1,4 +1,4 @@
-// goagen bootstrap -d github.com/freddygv/cassandra-wannabe/design
+// goagen bootstrap -d github.com/freddygv/cassandra-wannabe/api/design
 package design
 
 import (
@@ -67,6 +67,7 @@ var _ = Resource("rating", func() {
 		Routing(PUT("/"))
 		Payload(RatingPayload)
 		Response(NoContent)
+		Response(InternalServerError)
 	})
 
 	Action("read", func() {
@@ -77,6 +78,8 @@ var _ = Resource("rating", func() {
 			Param("userId", Integer)
 		})
 		Response(OK, RatingMedia)
+		Response(NotFound)
+		Response(InternalServerError)
 	})
 
 	Action("delete", func() {
@@ -87,6 +90,8 @@ var _ = Resource("rating", func() {
 			Param("userId", Integer)
 		})
 		Response(Accepted)
+		Response(NotFound)
+		Response(InternalServerError)
 	})
 })
 
