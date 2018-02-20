@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 const (
 	port   = ":8081"
 	bucket = "ratings"
+	file   = "data/node.db"
 )
 
 type crudServer struct {
@@ -27,12 +29,25 @@ type crudServer struct {
 }
 
 func main() {
-	db, err := bolt.Open("data/node.db", 0600, &bolt.Options{Timeout: 1 * time.Second})
+	// Start with empty DB
+	if err := os.RemoveAll(file); err != nil {
+		log.Fatalf("failed to delete: %v", err)
+	}
+	db, err := bolt.Open(file, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		log.Fatalf("failed to open: %v", err)
 	}
-	initializeDB(db)
 
+	// Init bucket
+	db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucket([]byte(bucket))
+		if err != nil {
+			log.Fatalf("create bucket: %v", err)
+		}
+		return nil
+	})
+
+	// gRPC server
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -43,16 +58,6 @@ func main() {
 	s.Serve(lis)
 
 	db.Close()
-}
-
-func initializeDB(db *bolt.DB) {
-	db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucket([]byte(bucket))
-		if err != nil {
-			log.Fatalf("create bucket: %v", err)
-		}
-		return nil
-	})
 }
 
 func (s *crudServer) Read(ctx context.Context, in *pb.Key) (*pb.Record, error) {
@@ -103,7 +108,7 @@ func (s *crudServer) Delete(ctx context.Context, in *pb.Key) (*pb.DeleteResponse
 	return &pb.DeleteResponse{}, nil
 }
 
-// Combine UserID and MovieID, then hash them
+// Combine and hash UserID and MovieID
 func partition(UserID, MovieID int32) []byte {
 	u := formatInt32(UserID)
 	m := formatInt32(MovieID)
@@ -112,7 +117,6 @@ func partition(UserID, MovieID int32) []byte {
 	return []byte(strconv.FormatUint(checksum, 16))
 }
 
-// int32 to string
 func formatInt32(num int32) string {
 	return strconv.FormatInt(int64(num), 10)
 }
