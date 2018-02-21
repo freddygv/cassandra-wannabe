@@ -15,5 +15,14 @@ services:
     ports:
       - "9411:9411"
 
+  grafana:
+    build: ./grafana
+    networks:
+      - mybridge
+    ports:
+      - "3000:3000"
+    depends_on:
+      - metrics
+
 networks:
   mybridge:
