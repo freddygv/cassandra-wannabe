@@ -79,8 +79,11 @@ func (s *crudServer) Read(ctx context.Context, in *pb.Key) (*pb.Record, error) {
 		err := json.Unmarshal(v, &r)
 		return err
 	})
+	if err != nil {
+		return &pb.Record{}, status.Errorf(codes.Internal, "read: %v", err)
+	}
 
-	return r.Payload, err
+	return r.Payload, nil
 }
 
 func (s *crudServer) Upsert(ctx context.Context, in *pb.Record) (*pb.UpsertResponse, error) {
