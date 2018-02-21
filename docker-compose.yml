@@ -15,8 +15,8 @@ services:
     ports:
       - "9411:9411"
 
-  grafana:
-    build: ./grafana
+  dashboards:
+    build: ./dashboards
     networks:
       - mybridge
     ports:
