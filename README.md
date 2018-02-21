@@ -12,10 +12,9 @@ Distributed data store **experiment** for MovieLens ratings dataset. Schema is h
 - [ ] Data replication on 2 nodes with Cassandra's SimpleStrategy
 - [x] Expose REST api for upsert/read/delete
 - [x] gRPC CRUD service for the nodes
-- [ ] Observability instrumentation with OpenCensus.io
-- [ ] Metrics exported to Prometheus
-- [ ] Traces exported to Zipkin
+- [ ] Observability with OpenCensus.io, exporting to Prometheus and OpenZipkin
 
 ### Stretch Goals
-- [ ] Virtual nodes instead of real nodes
 - [ ] Basic implementation of Gossip protocol with UDP packets
+- [ ] Data streaming to new nodes when cluster grows
+- [ ] Virtual nodes instead of real nodes
