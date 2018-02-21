@@ -18,3 +18,4 @@ Distributed data store **experiment** for MovieLens ratings dataset. Schema is h
 - [ ] Basic implementation of Gossip protocol with UDP packets
 - [ ] Data streaming to new nodes when cluster grows
 - [ ] Virtual nodes instead of real nodes
+- [ ] Memtable that flushes to disk when full
