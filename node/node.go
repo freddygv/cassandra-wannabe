@@ -29,12 +29,8 @@ const (
 )
 
 type crudServer struct {
-	db *bolt.DB
-}
-
-type Row struct {
-	Payload *pb.Record
-	Created time.Time
+	db      *bolt.DB
+	metrics Metrics
 }
 
 type Metrics struct {
@@ -47,15 +43,19 @@ type Metrics struct {
 	deleteError *stats.Int64Measure
 }
 
+type Row struct {
+	Payload *pb.Record
+	Created time.Time
+}
+
 func main() {
-	var m Metrics
-	instrument(&m)
+	var server crudServer
 
-	var db *bolt.DB
-	buildDB(db)
-	serveCRUD(db)
+	server.instrument()
+	server.buildDB()
+	server.serveCRUD()
 
-	db.Close()
+	server.db.Close()
 }
 
 func (s *crudServer) Read(ctx context.Context, in *pb.Key) (*pb.Record, error) {
@@ -113,19 +113,19 @@ func (s *crudServer) Delete(ctx context.Context, in *pb.Key) (*pb.DeleteResponse
 	return &pb.DeleteResponse{}, nil
 }
 
-func buildDB(db *bolt.DB) {
-	// Start with empty DB
+func (s *crudServer) buildDB() {
+	// Start fresh
 	err := os.RemoveAll(file)
 	if err != nil {
 		log.Fatalf("failed to delete db: %v", err)
 	}
-	db, err = bolt.Open(file, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	s.db, err = bolt.Open(file, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		log.Fatalf("failed to open db: %v", err)
 	}
 
 	// Init bucket
-	db.Update(func(tx *bolt.Tx) error {
+	s.db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucket([]byte(bucket))
 		if err != nil {
 			log.Fatalf("failed to create bucket: %v", err)
@@ -135,23 +135,24 @@ func buildDB(db *bolt.DB) {
 
 }
 
-func instrument(m *Metrics) {
+// Create metrics, define aggregations for them, then subscribe
+func (s *crudServer) instrument() {
 	exp, err := prometheus.NewExporter(prometheus.Options{})
 	if err != nil {
 		log.Fatalf("failed to create exporter: %v", err)
 	}
 	view.RegisterExporter(exp)
 
-	m.read, err = stats.Int64("cw/measures/read_count", "number of keys read", "")
+	s.metrics.read, err = stats.Int64("cw/measures/read_count", "number of keys read", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
 
 	viewRead, err := view.New(
-		metricName(m.read.Name()),
-		m.read.Description(),
+		metricName(s.metrics.read.Name()),
+		s.metrics.read.Description(),
 		nil,
-		m.read,
+		s.metrics.read,
 		view.CountAggregation{},
 	)
 	if err != nil {
@@ -161,15 +162,15 @@ func instrument(m *Metrics) {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	m.readMiss, err = stats.Int64("cw/measures/read_miss_count", "number read misses (key not in db)", "")
+	s.metrics.readMiss, err = stats.Int64("cw/measures/read_miss_count", "number read misses (key not in db)", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
 	viewReadMiss, err := view.New(
-		metricName(m.readMiss.Name()),
-		m.readMiss.Description(),
+		metricName(s.metrics.readMiss.Name()),
+		s.metrics.readMiss.Description(),
 		nil,
-		m.readMiss,
+		s.metrics.readMiss,
 		view.CountAggregation{},
 	)
 	if err != nil {
@@ -179,15 +180,15 @@ func instrument(m *Metrics) {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	m.readError, err = stats.Int64("cw/measures/read_error_count", "number of read errors", "")
+	s.metrics.readError, err = stats.Int64("cw/measures/read_error_count", "number of read errors", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
 	viewReadError, err := view.New(
-		metricName(m.readError.Name()),
-		m.readError.Description(),
+		metricName(s.metrics.readError.Name()),
+		s.metrics.readError.Description(),
 		nil,
-		m.readError,
+		s.metrics.readError,
 		view.CountAggregation{},
 	)
 	if err != nil {
@@ -197,15 +198,15 @@ func instrument(m *Metrics) {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	m.upsert, err = stats.Int64("cw/measures/upsert_count", "number of keys upserted", "")
+	s.metrics.upsert, err = stats.Int64("cw/measures/upsert_count", "number of keys upserted", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
 	viewUpsert, err := view.New(
-		metricName(m.upsert.Name()),
-		m.upsert.Description(),
+		metricName(s.metrics.upsert.Name()),
+		s.metrics.upsert.Description(),
 		nil,
-		m.upsert,
+		s.metrics.upsert,
 		view.CountAggregation{},
 	)
 	if err != nil {
@@ -215,15 +216,15 @@ func instrument(m *Metrics) {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	m.upsertError, err = stats.Int64("cw/measures/upsert_error_count", "number of upsert errors", "")
+	s.metrics.upsertError, err = stats.Int64("cw/measures/upsert_error_count", "number of upsert errors", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
 	viewUpsertError, err := view.New(
-		metricName(m.upsertError.Name()),
-		m.upsertError.Description(),
+		metricName(s.metrics.upsertError.Name()),
+		s.metrics.upsertError.Description(),
 		nil,
-		m.upsertError,
+		s.metrics.upsertError,
 		view.CountAggregation{},
 	)
 	if err != nil {
@@ -233,15 +234,15 @@ func instrument(m *Metrics) {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	m.delete, err = stats.Int64("cw/measures/delete_count", "number of keys deleted", "")
+	s.metrics.delete, err = stats.Int64("cw/measures/delete_count", "number of keys deleted", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
 	viewDelete, err := view.New(
-		metricName(m.delete.Name()),
-		m.delete.Description(),
+		metricName(s.metrics.delete.Name()),
+		s.metrics.delete.Description(),
 		nil,
-		m.delete,
+		s.metrics.delete,
 		view.CountAggregation{},
 	)
 	if err != nil {
@@ -251,15 +252,15 @@ func instrument(m *Metrics) {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	m.deleteError, err = stats.Int64("cw/measures/delete_error_count", "number of key deletion errors", "")
+	s.metrics.deleteError, err = stats.Int64("cw/measures/delete_error_count", "number of key deletion errors", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
 	viewDeleteError, err := view.New(
-		metricName(m.deleteError.Name()),
-		m.deleteError.Description(),
+		metricName(s.metrics.deleteError.Name()),
+		s.metrics.deleteError.Description(),
 		nil,
-		m.deleteError,
+		s.metrics.deleteError,
 		view.CountAggregation{},
 	)
 	if err != nil {
@@ -274,15 +275,15 @@ func instrument(m *Metrics) {
 }
 
 // gRPC server
-func serveCRUD(db *bolt.DB) {
+func (s *crudServer) serveCRUD() {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	s := grpc.NewServer()
-	pb.RegisterCRUDServiceServer(s, &crudServer{db})
-	s.Serve(lis)
+	gServer := grpc.NewServer()
+	pb.RegisterCRUDServiceServer(gServer, s)
+	gServer.Serve(lis)
 }
 
 // Combine and hash UserID and MovieID
