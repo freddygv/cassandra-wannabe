@@ -1,4 +1,3 @@
-// goagen bootstrap -d github.com/freddygv/cassandra-wannabe/api/design
 package design
 
 import (
@@ -6,6 +5,7 @@ import (
 	. "github.com/goadesign/goa/design/apidsl"
 )
 
+// goagen bootstrap -d github.com/freddygv/cassandra-wannabe/api/design
 var _ = API("db", func() {
 	Title("The Cassandra-Wannabe API")
 	Description("CRUD API for a distributed database.")
