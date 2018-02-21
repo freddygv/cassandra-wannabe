@@ -53,7 +53,7 @@ func main() {
 
 	server.instrument()
 	server.buildDB()
-	server.serveCRUD()
+	server.serve()
 
 	server.db.Close()
 }
@@ -67,15 +67,18 @@ func (s *crudServer) Read(ctx context.Context, in *pb.Key) (*pb.Record, error) {
 		v := b.Get([]byte(k))
 
 		if v == nil {
+			stats.Record(ctx, s.metrics.readMiss.M(1))
 			return status.Error(codes.NotFound, "key not found")
 		}
 		err := json.Unmarshal(v, &r)
 		return err
 	})
 	if err != nil {
+		stats.Record(ctx, s.metrics.readError.M(1))
 		return &pb.Record{}, status.Errorf(codes.Internal, "read: %v", err)
 	}
 
+	stats.Record(ctx, s.metrics.read.M(1))
 	return r.Payload, nil
 }
 
@@ -93,9 +96,11 @@ func (s *crudServer) Upsert(ctx context.Context, in *pb.Record) (*pb.UpsertRespo
 		return err
 	})
 	if err != nil {
+		stats.Record(ctx, s.metrics.upsertError.M(1))
 		return &pb.UpsertResponse{}, status.Errorf(codes.Internal, "update: %v", err)
 	}
 
+	stats.Record(ctx, s.metrics.upsertError.M(1))
 	return &pb.UpsertResponse{}, nil
 }
 
@@ -107,32 +112,24 @@ func (s *crudServer) Delete(ctx context.Context, in *pb.Key) (*pb.DeleteResponse
 		return err
 	})
 	if err != nil {
+		stats.Record(ctx, s.metrics.deleteError.M(1))
 		return &pb.DeleteResponse{}, status.Errorf(codes.Internal, "delete: %v", err)
 	}
 
+	stats.Record(ctx, s.metrics.delete.M(1))
 	return &pb.DeleteResponse{}, nil
 }
 
-func (s *crudServer) buildDB() {
-	// Start fresh
-	err := os.RemoveAll(file)
+// gRPC server
+func (s *crudServer) serve() {
+	lis, err := net.Listen("tcp", port)
 	if err != nil {
-		log.Fatalf("failed to delete db: %v", err)
-	}
-	s.db, err = bolt.Open(file, 0600, &bolt.Options{Timeout: 1 * time.Second})
-	if err != nil {
-		log.Fatalf("failed to open db: %v", err)
+		log.Fatalf("failed to listen: %v", err)
 	}
 
-	// Init bucket
-	s.db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucket([]byte(bucket))
-		if err != nil {
-			log.Fatalf("failed to create bucket: %v", err)
-		}
-		return nil
-	})
-
+	gServer := grpc.NewServer()
+	pb.RegisterCRUDServiceServer(gServer, s)
+	gServer.Serve(lis)
 }
 
 // Create metrics, define aggregations for them, then subscribe
@@ -274,16 +271,25 @@ func (s *crudServer) instrument() {
 
 }
 
-// gRPC server
-func (s *crudServer) serveCRUD() {
-	lis, err := net.Listen("tcp", port)
+func (s *crudServer) buildDB() {
+	// Start fresh
+	err := os.RemoveAll(file)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("failed to delete db: %v", err)
+	}
+	s.db, err = bolt.Open(file, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		log.Fatalf("failed to open db: %v", err)
 	}
 
-	gServer := grpc.NewServer()
-	pb.RegisterCRUDServiceServer(gServer, s)
-	gServer.Serve(lis)
+	s.db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucket([]byte(bucket))
+		if err != nil {
+			log.Fatalf("failed to create bucket: %v", err)
+		}
+		return nil
+	})
+
 }
 
 // Combine and hash UserID and MovieID
