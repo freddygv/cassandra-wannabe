@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -51,7 +53,7 @@ type Row struct {
 func main() {
 	var server crudServer
 
-	server.instrument()
+	go server.instrument()
 	server.buildDB()
 	server.serve()
 
@@ -67,8 +69,7 @@ func (s *crudServer) Read(ctx context.Context, in *pb.Key) (*pb.Record, error) {
 		v := b.Get([]byte(k))
 
 		if v == nil {
-			stats.Record(ctx, s.metrics.readMiss.M(1))
-			return status.Error(codes.NotFound, "key not found")
+			return errors.New("key not found")
 		}
 		err := json.Unmarshal(v, &r)
 		return err
@@ -100,7 +101,7 @@ func (s *crudServer) Upsert(ctx context.Context, in *pb.Record) (*pb.UpsertRespo
 		return &pb.UpsertResponse{}, status.Errorf(codes.Internal, "update: %v", err)
 	}
 
-	stats.Record(ctx, s.metrics.upsertError.M(1))
+	stats.Record(ctx, s.metrics.upsert.M(1))
 	return &pb.UpsertResponse{}, nil
 }
 
@@ -129,18 +130,19 @@ func (s *crudServer) serve() {
 
 	gServer := grpc.NewServer()
 	pb.RegisterCRUDServiceServer(gServer, s)
+	log.Printf("Serving CRUDService at %v", port)
 	gServer.Serve(lis)
 }
 
 // Create metrics, define aggregations for them, then subscribe
 func (s *crudServer) instrument() {
-	exp, err := prometheus.NewExporter(prometheus.Options{})
+	exporter, err := prometheus.NewExporter(prometheus.Options{})
 	if err != nil {
 		log.Fatalf("failed to create exporter: %v", err)
 	}
-	view.RegisterExporter(exp)
+	view.RegisterExporter(exporter)
 
-	s.metrics.read, err = stats.Int64("cw/measures/read_count", "number of keys read", "")
+	s.metrics.read, err = stats.Int64("cw/measures/node_read_count", "number of keys read", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
@@ -159,7 +161,7 @@ func (s *crudServer) instrument() {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	s.metrics.readMiss, err = stats.Int64("cw/measures/read_miss_count", "number read misses (key not in db)", "")
+	s.metrics.readMiss, err = stats.Int64("cw/measures/node_read_miss_count", "number read misses (key not in db)", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
@@ -177,7 +179,7 @@ func (s *crudServer) instrument() {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	s.metrics.readError, err = stats.Int64("cw/measures/read_error_count", "number of read errors", "")
+	s.metrics.readError, err = stats.Int64("cw/measures/node_read_error_count", "number of read errors", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
@@ -195,7 +197,7 @@ func (s *crudServer) instrument() {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	s.metrics.upsert, err = stats.Int64("cw/measures/upsert_count", "number of keys upserted", "")
+	s.metrics.upsert, err = stats.Int64("cw/measures/node_upsert_count", "number of keys upserted", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
@@ -213,7 +215,7 @@ func (s *crudServer) instrument() {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	s.metrics.upsertError, err = stats.Int64("cw/measures/upsert_error_count", "number of upsert errors", "")
+	s.metrics.upsertError, err = stats.Int64("cw/measures/node_upsert_error_count", "number of upsert errors", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
@@ -231,7 +233,7 @@ func (s *crudServer) instrument() {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	s.metrics.delete, err = stats.Int64("cw/measures/delete_count", "number of keys deleted", "")
+	s.metrics.delete, err = stats.Int64("cw/measures/node_delete_count", "number of keys deleted", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
@@ -249,7 +251,7 @@ func (s *crudServer) instrument() {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
 
-	s.metrics.deleteError, err = stats.Int64("cw/measures/delete_error_count", "number of key deletion errors", "")
+	s.metrics.deleteError, err = stats.Int64("cw/measures/node_delete_error_count", "number of key deletion errors", "")
 	if err != nil {
 		log.Fatalf("failed to create metric: %v", err)
 	}
@@ -268,6 +270,11 @@ func (s *crudServer) instrument() {
 	}
 
 	view.SetReportingPeriod(1 * time.Second)
+
+	addr := ":9999"
+	log.Printf("Serving metrics at %v", addr)
+	http.Handle("/metrics", exporter)
+	log.Fatal(http.ListenAndServe(addr, nil))
 
 }
 
